@@ -7,22 +7,26 @@
         var currentUrl = window.location.href;
         log('Current URL: ' + currentUrl);
         
-        if (!currentUrl.includes('google.com/maps/dir/')) {
-            throw new Error('This script only works on Google Maps direction pages.');
+        if (!currentUrl.includes('google.com/maps')) {
+            throw new Error('This script only works on Google Maps pages.');
         }
 
         var embedUrl = 'https://www.google.com/maps/embed?pb=!1m';
 
-        var pathParts = currentUrl.split('/dir/')[1].split('/@')[0].split('/');
-        var locations = pathParts.slice(0, -1);
-        
-        if (locations.length < 2) {
-            throw new Error('Could not extract start and end locations from URL.');
+        // Extract locations and coordinates
+        var matches = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        var lat = matches ? matches[1] : '0';
+        var lng = matches ? matches[2] : '0';
+
+        var locations = currentUrl.split('/maps/dir/')[1];
+        if (locations) {
+            locations = locations.split('/@')[0].split('/');
+        } else {
+            // Handle case where it's not a directions URL
+            locations = [currentUrl.split('/place/')[1].split('/@')[0]];
         }
 
-        embedUrl += (14 + locations.length * 7) + '!1m12!1m3!1d200000!2d' + 
-                    (parseFloat(pathParts[pathParts.length - 1].split(',')[1]) || 0) + 
-                    '!3d' + (parseFloat(pathParts[pathParts.length - 1].split(',')[0]) || 0) + 
+        embedUrl += (14 + locations.length * 7) + '!1m12!1m3!1d200000!2d' + lng + '!3d' + lat + 
                     '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m' + 
                     (1 + locations.length * 5) + '!3e0';
 
