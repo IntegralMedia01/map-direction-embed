@@ -15,8 +15,8 @@
         var currentUrl = window.location.href;
         log('Current URL: ' + currentUrl);
         
-        if (!currentUrl.includes('google.com/maps')) {
-            throw new Error('This script only works on Google Maps pages.');
+        if (!currentUrl.includes('google.com/maps/dir/')) {
+            throw new Error('This script only works on Google Maps direction pages.');
         }
 
         var embedUrl = 'https://www.google.com/maps/embed?pb=!1m';
@@ -26,31 +26,27 @@
         var lat = matches ? matches[1] : '0';
         var lng = matches ? matches[2] : '0';
 
-        // Extract locations from data parameter
-        var dataParam = currentUrl.split('data=')[1];
-        var locations = [];
-        if (dataParam) {
-            var dataParts = dataParam.split('!');
-            for (var i = 0; i < dataParts.length; i++) {
-                if (dataParts[i] === '1m1' && i + 3 < dataParts.length) {
-                    var locName = decodeURIComponentSafe(dataParts[i + 1].split(':')[0]);
-                    var locLat = dataParts[i + 3];
-                    var locLng = dataParts[i + 2];
-                    locations.push({name: locName, lat: locLat, lng: locLng});
-                }
-            }
-        }
+        // Extract locations
+        var dirPart = currentUrl.split('/maps/dir/')[1].split('/@')[0];
+        var locations = dirPart.split('/').filter(Boolean);
 
         if (locations.length < 2) {
             throw new Error('Could not extract start and end locations from URL.');
         }
 
+        // Extract coordinates for each location from the data parameter
+        var dataParam = currentUrl.split('!4m')[1];
+        var coordPairs = dataParam.match(/!2d(-?\d+\.\d+)!2d(-?\d+\.\d+)/g);
+
         embedUrl += (14 + locations.length * 7) + '!1m12!1m3!1d200000!2d' + lng + '!3d' + lat + 
                     '!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!4m' + 
                     (1 + locations.length * 5) + '!3e0';
 
-        locations.forEach(function(loc) {
-            embedUrl += '!4m5!1s' + encodeURIComponent(loc.name) + '!2m2!1d' + loc.lng + '!2d' + loc.lat + '!3s' + encodeURIComponent(loc.name);
+        locations.forEach(function(loc, index) {
+            var coords = coordPairs && coordPairs[index] ? coordPairs[index].match(/!2d(-?\d+\.\d+)!2d(-?\d+\.\d+)/) : null;
+            var locLng = coords ? coords[1] : '0';
+            var locLat = coords ? coords[2] : '0';
+            embedUrl += '!4m5!1s' + encodeURIComponent(decodeURIComponentSafe(loc)) + '!2m2!1d' + locLng + '!2d' + locLat + '!3s' + encodeURIComponent(decodeURIComponentSafe(loc));
         });
 
         embedUrl += '!5e0!3m2!1sen!2sus!4v' + Date.now() + '!5m2!1sen!2sus';
