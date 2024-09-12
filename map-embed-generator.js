@@ -3,6 +3,14 @@
         console.log('[Map Embed Generator]: ' + message);
     }
 
+    function decodeURIComponentSafe(uri) {
+        try {
+            return decodeURIComponent(uri);
+        } catch (e) {
+            return uri;
+        }
+    }
+
     try {
         var currentUrl = window.location.href;
         log('Current URL: ' + currentUrl);
@@ -18,11 +26,19 @@
         var lat = matches ? matches[1] : '0';
         var lng = matches ? matches[2] : '0';
 
-        // Extract locations
-        var dirParts = currentUrl.split('/maps/dir/')[1];
+        // Extract locations from data parameter
+        var dataParam = currentUrl.split('data=')[1];
         var locations = [];
-        if (dirParts) {
-            locations = dirParts.split('/@')[0].split('/');
+        if (dataParam) {
+            var dataParts = dataParam.split('!');
+            for (var i = 0; i < dataParts.length; i++) {
+                if (dataParts[i] === '1m1' && i + 3 < dataParts.length) {
+                    var locName = decodeURIComponentSafe(dataParts[i + 1].split(':')[0]);
+                    var locLat = dataParts[i + 3];
+                    var locLng = dataParts[i + 2];
+                    locations.push({name: locName, lat: locLat, lng: locLng});
+                }
+            }
         }
 
         if (locations.length < 2) {
@@ -34,8 +50,7 @@
                     (1 + locations.length * 5) + '!3e0';
 
         locations.forEach(function(loc) {
-            var encodedLoc = encodeURIComponent(loc.replace(/\+/g, ' '));
-            embedUrl += '!4m5!1s' + encodedLoc + '!2s' + encodedLoc + '!3s' + encodedLoc;
+            embedUrl += '!4m5!1s' + encodeURIComponent(loc.name) + '!2m2!1d' + loc.lng + '!2d' + loc.lat + '!3s' + encodeURIComponent(loc.name);
         });
 
         embedUrl += '!5e0!3m2!1sen!2sus!4v' + Date.now() + '!5m2!1sen!2sus';
