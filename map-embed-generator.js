@@ -13,17 +13,20 @@
 
         var embedUrl = 'https://www.google.com/maps/embed?pb=!1m';
 
-        // Extract locations and coordinates
+        // Extract coordinates
         var matches = currentUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
         var lat = matches ? matches[1] : '0';
         var lng = matches ? matches[2] : '0';
 
-        var locations = currentUrl.split('/maps/dir/')[1];
-        if (locations) {
-            locations = locations.split('/@')[0].split('/');
-        } else {
-            // Handle case where it's not a directions URL
-            locations = [currentUrl.split('/place/')[1].split('/@')[0]];
+        // Extract locations
+        var dirParts = currentUrl.split('/maps/dir/')[1];
+        var locations = [];
+        if (dirParts) {
+            locations = dirParts.split('/@')[0].split('/');
+        }
+
+        if (locations.length < 2) {
+            throw new Error('Could not extract start and end locations from URL.');
         }
 
         embedUrl += (14 + locations.length * 7) + '!1m12!1m3!1d200000!2d' + lng + '!3d' + lat + 
